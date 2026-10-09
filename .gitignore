@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# 运行与数据生成
+run/
+run-data/
+src/generated/.cache/
+
+# 参考源码（本地查阅用，不入库）
+.reference/
+
+# 被取代的旧文件暂存
+.trash/
+
+# 其他
+*.log
+*.hprof

@@ -93,7 +93,11 @@ public final class AttachmentSync {
             if (name == null) {
                 continue;
             }
-            entries.add(new SyncAttachmentsPacket.Entry(name, writePayload(type, entry.getValue(), registryAccess, true)));
+            byte[] payload = writePayload(type, entry.getValue(), registryAccess, true);
+            if (payload == null) {
+                continue;
+            }
+            entries.add(new SyncAttachmentsPacket.Entry(name, payload));
         }
         return entries.isEmpty() ? null : wrap(holder, entries);
     }
@@ -124,7 +128,14 @@ public final class AttachmentSync {
             return null;
         }
         Object value = attachmentHolder.getExistingDataOrNull(type);
-        byte[] payload = value == null ? null : writePayload(type, value, receiver.level().registryAccess(), false);
+        byte[] payload = null;
+        if (value != null) {
+            payload = writePayload(type, value, receiver.level().registryAccess(), false);
+            if (payload == null) {
+                // 编码失败，不能发空负载——那会被客户端当成删除
+                return null;
+            }
+        }
         return wrap(holder, List.of(new SyncAttachmentsPacket.Entry(name, payload)));
     }
 
@@ -149,7 +160,10 @@ public final class AttachmentSync {
     }
 
     /**
-     * 用附件自己的流编解码器把值写成字节负载。返回 null 表示该附件当前不存在（即需要移除）。
+     * 用附件自己的流编解码器把值写成字节负载。
+     *
+     * <p>返回 null 表示编码失败或无同步处理器。调用方**不得**把 null 当作「附件已移除」发出去，
+     * 否则一次编码异常就会让客户端把附件删掉。
      */
     @SuppressWarnings("unchecked")
     @Nullable

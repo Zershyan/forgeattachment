@@ -1,25 +1,12 @@
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-buildscript {
-    repositories {
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-    }
-}
-
 plugins {
-    id 'eclipse'
-    id 'idea'
+    id 'java-library'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.148'
+    id 'idea'
 }
-
-apply plugin: 'org.spongepowered.mixin'
 
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
@@ -29,80 +16,21 @@ group = mod_group_id
 
 // 包内版本号恒带 +build.<编号>，只有 buildAlpha 会把这个编号也写进 jar 文件名
 def isAlphaBuild = gradle.startParameter.taskNames.any { it.endsWith('buildAlpha') }
+// buildAlpha 用 +1 后的编号构建，成功后把同一编号写回 gradle.properties，
+// 使产物里的编号与 properties 始终一致
+def buildNumber = mod_build_number.toInteger() + (isAlphaBuild ? 1 : 0)
 def baseVersion = "${mod_version}-${minecraft_version}"
-version = "${baseVersion}+build.${mod_build_number}"
+version = "${baseVersion}+build.${buildNumber}"
 
-base {
-    archivesName = mod_id
-}
-
+// Forge 1.20.1 使用 Java 17
 java {
+    withSourcesJar()
+    withJavadocJar()
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    copyIdeResources = true
-
-    runs {
-        // ForgeGradle 按运行名推断类型（client / server / data / gameTestServer），无需显式声明
-        client1 {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            workingDirectory(file('run/client1'))
-            args("--username", "player1")
-        }
-
-        client2 {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            workingDirectory(file('run/client2'))
-            args("--username", "player2")
-        }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            workingDirectory(file('run/server'))
-            args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            workingDirectory(file('run/gameTestServer'))
-        }
-
-        data {
-            workingDirectory(file('run-data'))
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
-
-        configureEach {
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
-}
-
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
-}
-
-sourceSets.main.resources {
-    srcDir('src/generated/resources')
-    exclude("**/*.bbmodel") // BlockBench 工程文件
-    exclude("**/.cache/**") // datagen 缓存
+base {
+    archivesName = mod_id
 }
 
 repositories {
@@ -110,10 +38,10 @@ repositories {
     flatDir {
         dir 'libs'
     }
-    maven { // TOP
+    maven { // CurseForge 依赖
         url "https://cursemaven.com"
     }
-    maven { // mirror
+    maven { // 依赖镜像
         name = "ModMaven"
         url = "https://modmaven.dev"
     }
@@ -124,37 +52,76 @@ repositories {
     }
 }
 
-dependencies {
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
 
-    compileOnly("org.spongepowered:mixin:0.8.5")
-    compileOnly(fileTree("libs/compileOnly"))
+    parchment {
+        minecraftVersion = project.parchment_minecraft_version
+        mappingsVersion = project.parchment_mappings_version
+    }
+
+    mixin {
+        add sourceSets.main, "${mod_id}.refmap.json"
+        config "${mod_id}.mixins.json"
+    }
+
+    runs {
+        client1 {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = project.file('./run/client1')
+            programArguments.addAll("--username", "player1")
+        }
+
+        client2 {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = project.file('./run/client2')
+            programArguments.addAll("--username", "player2")
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
 }
 
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
-    var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            forge_version          : forge_version,
-            forge_version_range    : forge_version_range,
-            loader_version_range   : loader_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description,
-            mod_credits            : mod_credits,
-            mod_url                : mod_url,
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    // 模板里有中文注释，默认按平台编码读会写成乱码
-    filteringCharset = 'UTF-8'
-    from "src/main/templates"
-    include 'META-INF/**'
-    into "build/generated/sources/modMetadata"
+sourceSets.main.resources {
+    srcDir('src/generated/resources')
+    exclude("**/*.bbmodel")
+    exclude("**/.cache/**")
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // mixin refmap：Forge 1.20.1 必须由注解处理器生成
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 // 构建期开关：把 gradle.properties 的值展开进常量类
@@ -167,10 +134,49 @@ var generateStartupConfig = tasks.register("generateStartupConfig", ProcessResou
     into "build/generated/sources/startupConfig"
 }
 
-sourceSets.main.resources.srcDir generateModMetadata
 sourceSets.main.java.srcDir generateStartupConfig
 
+// mods.toml 占位符展开（Forge 的元数据直接在 resources 下，不走 templates 目录）
+var modMetadataProps = [
+        minecraft_version      : minecraft_version,
+        minecraft_version_range: minecraft_version_range,
+        forge_version          : forge_version,
+        forge_version_range    : forge_version_range,
+        loader_version_range   : loader_version_range,
+        mod_id                 : mod_id,
+        mod_name               : mod_name,
+        mod_license            : mod_license,
+        // 包内版本号恒带 +build.<编号>，用 gradle 的 version 而非 mod_version
+        mod_version            : version,
+        mod_authors            : mod_authors,
+        mod_description        : mod_description,
+        mod_credits            : mod_credits,
+        mod_url                : mod_url,
+]
+
+tasks.named('processResources', ProcessResources).configure {
+    inputs.properties modMetadataProps
+    filteringCharset = 'UTF-8'
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand modMetadataProps
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 tasks.named('jar', Jar).configure {
+    manifest.attributes('MixinConfigs': "${mod_id}.mixins.json")
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    // 中文注释与跨模块 @link 会产生警告，不能因此中断发布
+    failOnError = false
+}
+
+// 未经重混淆的产物，供下游 mod 在开发环境引用
+tasks.register('deobfJar', Jar) {
+    from(sourceSets.main.output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes(["Specification-Title"     : mod_id,
                     "Specification-Vendor"    : mod_authors,
@@ -182,8 +188,49 @@ tasks.named('jar', Jar).configure {
                     "MixinConfigs"            : "${mod_id}.mixins.json"
         ])
     }
+    dependsOn classes
+}
 
-    finalizedBy 'reobfJar'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact deobfJar
+            artifact javadocJar
+            artifact sourcesJar
+
+            groupId = project.group
+            artifactId = mod_id
+            version = project.version
+            pom {
+                name = mod_id
+                description = mod_description
+                if (mod_url) {
+                    url = mod_url
+                }
+                licenses {
+                    license {
+                        name = mod_license
+                    }
+                }
+                developers {
+                    developer {
+                        id = mod_id
+                        name = mod_authors
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'MafuyuNexus'
+            url = 'https://maven.sighs.cc/repository/maven-releases/'
+            credentials {
+                username = System.getenv('MafuyuNexusUsername') ?: ''
+                password = System.getenv('MafuyuNexusPassword') ?: ''
+            }
+        }
+    }
 }
 
 // 打包收尾：最终包改名到 libs 顶层，原包（带编号）挪进 libs/origin
@@ -216,28 +263,34 @@ tasks.register('finalizeArtifacts') {
 
 tasks.named('build') { finalizedBy 'finalizeArtifacts' }
 
-// 与 build 完全相同，只是版本号会带上 +build.<编号>
+// 与 build 完全相同，只是编号 +1 并把该编号同步回 gradle.properties
 tasks.register('buildAlpha') {
     group = 'build'
-    description = '打成 alpha 包，产物版本号带 +build.<编号>'
+    description = '打成 alpha 包，产物版本号带 +build.<编号>，构建成功后把该编号同步回 gradle.properties'
     dependsOn 'build'
-}
-
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            artifact jar
+    def propsFile = layout.projectDirectory.file('gradle.properties').asFile
+    def buildNumberBefore = mod_build_number
+    def buildNumberUsed = buildNumber
+    doLast {
+        def text = propsFile.getText('UTF-8')
+        def matcher = (text =~ '(?m)^mod_build_number=\\s*(\\d+)\\s*$')
+        if (!matcher.find()) {
+            logger.warn('mod_build_number not found in gradle.properties, skipped sync')
+            return
         }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
+        propsFile.setText(
+                text.replaceFirst('(?m)^mod_build_number=\\s*\\d+\\s*$', "mod_build_number=${buildNumberUsed}"),
+                'UTF-8')
+        logger.lifecycle("mod_build_number synced: ${buildNumberBefore} -> ${buildNumberUsed}")
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
 }
 
 tasks.withType(JavaExec).configureEach {

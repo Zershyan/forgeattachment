@@ -1,0 +1,65 @@
+{
+  "name": "ForgeAttachment",
+  "ename": "ForgeAttachment",
+  "intro": "把 NeoForge 1.21.1 的数据附件系统移植到 Forge 1.20.1，提供可注册、可同步、可序列化的对象附属数据能力",
+  "modid": "forgeattachment",
+  "cfprojectid": "1784575",
+  "mrprojectid": "",
+  "category": [
+    "LIB",
+    "实用",
+    "辅助"
+  ],
+  "platform": [
+    "JAVA版 (JAVA Edition)"
+  ],
+  "api": [
+    "Forge"
+  ],
+  "mode1": "需装",
+  "mode2": "需装",
+  "status": "活跃",
+  "source": "开源",
+  "mcVersions": {
+    "Forge": [
+      "1.20.1"
+    ]
+  },
+  "tags": [
+    "Attachment",
+    "数据附件"
+  ],
+  "keys": [
+    "数据附件",
+    "Data Attachment",
+    "API"
+  ],
+  "links": [
+    {
+      "title": "curseforge",
+      "href": "https://www.curseforge.com/minecraft/mc-mods/forgeattachment"
+    },
+    {
+      "title": "github",
+      "href": "https://github.com/Zershyan/forgeattachment"
+    }
+  ],
+  "license": {
+    "types": [
+      "源码"
+    ],
+    "name": "MIT"
+  },
+  "authors": [
+    {
+      "id": "36340",
+      "name": "Zershyan",
+      "roles": [
+        "所有者"
+      ]
+    }
+  ],
+  "content": "<p>[ban:title_menu]</p><p>[h1=简介]</p><p><strong>ForgeAttachment</strong> 把 NeoForge 1.21.1 的数据附件（Data Attachment）系统移植到 Forge 1.20.1，并以稳定的 API 提供给其他模组使用。</p><p>数据附件允许模组把额外数据直接挂在已有的游戏对象上，无需改动原类，也不必自行维护以对象为键的映射表。</p><p>[h2=内容]</p><p>本模组是纯库模组，不包含任何物品、方块或世界内容，只提供附件系统本身。</p><table class=\"table table-bordered text-nowrap\"><tbody><tr><th style=\"word-break: break-all;\" align=\"center\">能力</th><th style=\"word-break: break-all;\" align=\"center\">说明</th></tr><tr><td style=\"word-break: break-all;\" align=\"center\">附件注册</td><td style=\"word-break: break-all;\" align=\"center\">自定义 AttachmentType：默认值、序列化器、死亡复制行为</td></tr><tr><td style=\"word-break: break-all;\" align=\"center\">数据挂载</td><td style=\"word-break: break-all;\" align=\"center\">实体与方块实体均可挂载附件</td></tr><tr><td style=\"word-break: break-all;\" align=\"center\">客户端同步</td><td style=\"word-break: break-all;\" align=\"center\">按附件类型单独开启，附带同步事件</td></tr><tr><td style=\"word-break: break-all;\" align=\"center\">序列化</td><td style=\"word-break: break-all;\" align=\"center\">Codec（存档）与 StreamCodec（网络）两条路径</td></tr><tr><td style=\"word-break: break-all;\" align=\"center\">生命周期事件</td><td style=\"word-break: break-all;\" align=\"center\">附件挂载、移除与同步</td></tr></tbody></table><p>[h2=环境要求]</p><p>需要 Minecraft 1.20.1、Forge 47.x 与 Java 17。</p><p>[h2=备注]</p><p>本项目为非官方移植，与 NeoForge 团队无隶属关系，也未获其背书。</p>",
+  "coverPath": "src/main/resources/logo.png",
+  "redoId": "814518"
+}

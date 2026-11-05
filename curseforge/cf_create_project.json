@@ -1,0 +1,15 @@
+{
+  "name": "ForgeAttachment",
+  "summary": "Port of the NeoForge 1.21.1 data attachment system to Forge 1.20.1",
+  "license": "MIT",
+  "distribution": "Allow distribution to 3rd party",
+  "allowComments": true,
+  "autoCreate": true,
+  "dropdowns": [
+    ["Class", "Mods"],
+    ["Main category", "API and Library"],
+    ["Additional categories", "Server Utility"]
+  ],
+  "description": "description.md",
+  "icon": "../src/main/resources/logo.png"
+}

@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "minecraft": "1.20.1",
+      "artifact": "build/libs/forgeattachment-0.0.1-1.20.1.jar",
+      "sha256": "790cd5a29066a2d1a8cb66fcacf1881532469f9b5e0c1759ad846a165feaec34",
+      "metadata": {
+        "changelog": "Initial release: ports the NeoForge 1.21.1 data attachment system to Forge 1.20.1.\n\n- Full attachment API: registration, lookup, syncing and serialization\n- Attachment lifecycle events and client-side synchronization\n- Ported 1.21.1 ByteBufCodecs with common codecs exposed in the api package\n\n---\n\n首次发布：把 NeoForge 1.21.1 的数据附件（Data Attachment）系统移植到 Forge 1.20.1。\n\n- 完整的附件 API：注册、查询、同步与序列化\n- 附件生命周期事件与客户端同步\n- 移植 1.21.1 的 ByteBufCodecs，在 api 包暴露常用类型编解码器",
+        "changelogType": "markdown",
+        "displayName": "forgeattachment-0.0.1-1.20.1",
+        "releaseType": "beta",
+        "gameVersions": [
+          9990,
+          7498,
+          8326,
+          9638,
+          9639
+        ]
+      }
+    }
+  ]
+}

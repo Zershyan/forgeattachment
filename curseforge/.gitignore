@@ -1,0 +1,6 @@
+# 可重新生成的中间产物（体积大或由脚本生成）
+game-versions.json
+cf_create_project_fill.js
+cf_set_links.js
+upload-attempt-*.json
+upload-response-*.txt

@@ -1,4 +1,8 @@
-**ForgeAttachment** ports the NeoForge 1.21.1 data attachment system to Forge 1.20.1 and exposes it to other mods as a stable API. It is an unofficial port, not affiliated with or endorsed by the NeoForge team.
+**ForgeAttachment** ports the NeoForge 1.21.1 data attachment system to Forge 1.20.1 and exposes it to other mods as a stable API.
+
+**Original project:** NeoForge — CurseForge: https://www.curseforge.com/minecraft/mc-mods/neoforge · Source: https://github.com/neoforged/NeoForge
+
+This is an unofficial port, not affiliated with or endorsed by the NeoForge team.
 
 Data attachments let a mod store extra data **on existing game objects** (entities, block entities) without editing their classes or maintaining a separate map keyed by object identity. Register an `AttachmentType`, then read and write it on any object that supports attachments.
 
@@ -43,7 +47,11 @@ API design ported from NeoForge 1.21.1's attachment system; thanks to the NeoFor
 
 ---
 
-**ForgeAttachment** 把 NeoForge 1.21.1 的数据附件（Data Attachment）系统移植到 Forge 1.20.1，并以稳定的 API 开放给其他模组使用。本项目为非官方移植，与 NeoForge 团队无隶属关系，也未获其背书。
+**ForgeAttachment** 把 NeoForge 1.21.1 的数据附件（Data Attachment）系统移植到 Forge 1.20.1，并以稳定的 API 开放给其他模组使用。
+
+**原项目：** NeoForge — CurseForge：https://www.curseforge.com/minecraft/mc-mods/neoforge · 源码：https://github.com/neoforged/NeoForge
+
+本项目为非官方移植，与 NeoForge 团队无隶属关系，也未获其背书。
 
 数据附件允许模组把额外数据**直接挂在已有的游戏对象上**（实体、方块实体），既不用改动原类，也不用自己维护一张以对象为键的映射表。注册一个 `AttachmentType` 之后，就能在任意支持附件的对象上读写它。
 

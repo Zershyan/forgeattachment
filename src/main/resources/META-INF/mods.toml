@@ -9,6 +9,7 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 credits="${mod_credits}"
 description='''${mod_description}'''
+logoFile="logo.png"
 displayURL="${mod_url}"
 
 [[dependencies.${mod_id}]]

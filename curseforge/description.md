@@ -1,6 +1,6 @@
 **ForgeAttachment** ports the NeoForge 1.21.1 data attachment system to Forge 1.20.1 and exposes it to other mods as a stable API.
 
-**Original project:** NeoForge — CurseForge: https://www.curseforge.com/minecraft/mc-mods/neoforge · Source: https://github.com/neoforged/NeoForge
+**Original project:** NeoForge — https://github.com/neoforged/NeoForge
 
 This is an unofficial port, not affiliated with or endorsed by the NeoForge team.
 
@@ -49,7 +49,7 @@ API design ported from NeoForge 1.21.1's attachment system; thanks to the NeoFor
 
 **ForgeAttachment** 把 NeoForge 1.21.1 的数据附件（Data Attachment）系统移植到 Forge 1.20.1，并以稳定的 API 开放给其他模组使用。
 
-**原项目：** NeoForge — CurseForge：https://www.curseforge.com/minecraft/mc-mods/neoforge · 源码：https://github.com/neoforged/NeoForge
+**原项目：** NeoForge — https://github.com/neoforged/NeoForge
 
 本项目为非官方移植，与 NeoForge 团队无隶属关系，也未获其背书。
 

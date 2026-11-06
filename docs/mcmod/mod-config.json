@@ -3,7 +3,7 @@
   "ename": "ForgeAttachment",
   "intro": "把 NeoForge 1.21.1 的数据附件系统移植到 Forge 1.20.1，提供可注册、可同步、可序列化的对象附属数据能力",
   "modid": "forgeattachment",
-  "cfprojectid": "1784575",
+  "cfprojectid": "1787824",
   "mrprojectid": "",
   "category": [
     "LIB",

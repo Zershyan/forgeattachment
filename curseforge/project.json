@@ -1,7 +1,7 @@
 {
-  "projectId": 1784575,
+  "projectId": 1787824,
   "slug": "forgeattachment",
   "name": "ForgeAttachment",
-  "createdAt": "2026-11-05",
-  "note": "slug 由项目名推得，公开页受 Cloudflare 人机校验未直接验证"
+  "createdAt": "2026-11-07",
+  "note": "旧项目 1784575 因描述里的错误 CF 链接被拒并删除；新项目描述只保留 GitHub 链接"
 }

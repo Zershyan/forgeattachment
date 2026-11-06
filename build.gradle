@@ -200,7 +200,8 @@ publishing {
 
             groupId = project.group
             artifactId = mod_id
-            version = project.version
+            // 对外发布用正式版本号，不带内部构建编号（+build.N 只进包内元数据与 alpha 包名）
+            version = baseVersion
             pom {
                 name = mod_id
                 description = mod_description

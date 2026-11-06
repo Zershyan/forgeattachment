@@ -1,41 +1,59 @@
 package io.zershyan.forgeattachment;
 
-import io.zershyan.forgeattachment.config.StartupConfig;
-import io.zershyan.forgeattachment.example.ExampleHandler;
-import io.zershyan.forgeattachment.registry.ForgeAttachmentPackets;
-import io.zershyan.forgeattachment.registry.ForgeAttachmentRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.IEventBus;
+import io.zershyan.forgeattachment.attachment.AttachmentHolder;
+import io.zershyan.forgeattachment.attachment.IAttachmentHolder;
+import io.zershyan.forgeattachment.example.ExampleAttachments;
+import io.zershyan.forgeattachment.network.ForgeAttachmentNetwork;
+import net.minecraft.entity.Entity;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 /**
- * 把 NeoForge 1.21.1 的数据附件（Data Attachment）机制移植到 Forge 1.20.1。
- *
- * <p>下游 mod 可以像在 1.21.1 中一样注册 {@link io.zershyan.forgeattachment.attachment.AttachmentType}，
- * 并通过 {@link io.zershyan.forgeattachment.attachment.IAttachmentHolder} 读写附件。
+ * Forge 1.12.2 版入口。
  */
-@Mod(ForgeAttachment.MODID)
+@Mod(
+        modid = ForgeAttachment.MODID,
+        name = ForgeAttachment.NAME,
+        version = ForgeAttachment.VERSION,
+        acceptedMinecraftVersions = "[1.12,1.13)"
+)
 public class ForgeAttachment {
     public static final String MODID = "forgeattachment";
-    public static final Logger LOGGER = LoggerFactory.getLogger(ForgeAttachment.class);
+    public static final String NAME = "ForgeAttachment";
+    public static final String VERSION = "0.0.1";
 
-    public ForgeAttachment() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-
-        ForgeAttachmentRegistries.doRegister(modBus);
-        ForgeAttachmentPackets.doRegister(modBus);
-
-        //Example
-        if (!FMLEnvironment.production && StartupConfig.ENABLE_EXAMPLE) {
-            ExampleHandler.doRegister(modBus);
-        }
+    @Mod.EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        ForgeAttachmentNetwork.init();
+        ExampleAttachments.init();
+        selfCheck(event);
     }
 
-    public static ResourceLocation id(String path) {
-        return new ResourceLocation(MODID, path);
+    /**
+     * 启动自检：确认 Mixin 注入生效、附件能完成 NBT 往返。
+     */
+    private void selfCheck(FMLPreInitializationEvent event) {
+        boolean entityInjected = IAttachmentHolder.class.isAssignableFrom(Entity.class);
+        boolean tileInjected = IAttachmentHolder.class.isAssignableFrom(TileEntity.class);
+        if (entityInjected && tileInjected) {
+            event.getModLog().info("Mixin injection OK: Entity and TileEntity implement IAttachmentHolder");
+        } else {
+            event.getModLog().error("Mixin injection FAILED: Entity={}, TileEntity={}", entityInjected, tileInjected);
+        }
+
+        AttachmentHolder holder = new AttachmentHolder();
+        holder.setData(ExampleAttachments.NOTE, "round-trip");
+        NBTTagCompound tag = new NBTTagCompound();
+        holder.writeToNBT(tag);
+        AttachmentHolder restored = new AttachmentHolder();
+        restored.readFromNBT(tag);
+        String value = restored.getData(ExampleAttachments.NOTE);
+        if ("round-trip".equals(value)) {
+            event.getModLog().info("Attachment NBT round-trip OK: {}", value);
+        } else {
+            event.getModLog().error("Attachment NBT round-trip FAILED: {}", value);
+        }
     }
 }

@@ -1,20 +1,13 @@
 {
   "required": true,
-  "minVersion": "0.8",
+  "minVersion": "0.7.11",
   "package": "io.zershyan.forgeattachment.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "plugin": "io.zershyan.forgeattachment.mixin.ForgeAttachmentMixinPlugin",
+  "compatibilityLevel": "JAVA_8",
   "refmap": "forgeattachment.refmap.json",
   "mixins": [
-    "forgeattachment.common.MixinEntity",
-    "forgeattachment.common.MixinBlockEntity"
+    "MixinEntity",
+    "MixinTileEntity"
   ],
   "client": [],
-  "server": [],
-  "injectors": {
-    "defaultRequire": 1
-  },
-  "overwrites": {
-    "requireAnnotations": true
-  }
+  "server": []
 }

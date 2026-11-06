@@ -1,222 +1,134 @@
 package io.zershyan.forgeattachment.attachment;
 
-import io.zershyan.forgeattachment.ForgeAttachment;
-import io.zershyan.forgeattachment.registry.ForgeAttachmentRegistries;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nullable;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
- * 附件存储的实现。
- *
- * <p>实体与方块实体通过 mixin 各持有一个本类实例，并在自身 NBT 读写末尾追加一次调用，
- * 因此原版数据流不受影响。
+ * 附件存储本体，由 Mixin 注入到实体与方块实体的字段持有。
  */
 public class AttachmentHolder implements IAttachmentHolder {
-    /** 附件在实体/方块实体 NBT 中占用的键。 */
-    public static final String ATTACHMENTS_NBT_KEY = ForgeAttachment.MODID + ":attachments";
 
-    private final IAttachmentHolder exposedHolder;
+    private static final String NBT_ROOT = "ForgeAttachments";
 
-    @Nullable
-    private Map<AttachmentType<?>, Object> attachments;
-
-    /**
-     * @param exposedHolder 暴露给使用者的宿主对象，通常是实体或方块实体自身
-     */
-    public AttachmentHolder(IAttachmentHolder exposedHolder) {
-        this.exposedHolder = exposedHolder;
-    }
-
-    /**
-     * 返回暴露给使用者的 holder。
-     */
-    public IAttachmentHolder getExposedHolder() {
-        return this.exposedHolder;
-    }
-
-    private Map<AttachmentType<?>, Object> attachmentMap() {
-        if (this.attachments == null) {
-            this.attachments = new IdentityHashMap<>(4);
-        }
-        return this.attachments;
-    }
-
-    /**
-     * 内部存储视图，供同步与复制逻辑使用。尚未创建时返回 null。
-     */
-    @Nullable
-    public Map<AttachmentType<?>, Object> rawAttachments() {
-        return this.attachments;
-    }
-
-    private void validate(AttachmentType<?> type) {
-        Objects.requireNonNull(type);
-        if (!ForgeAttachmentRegistries.ATTACHMENT_TYPES().containsValue(type)) {
-            throw new IllegalArgumentException("Data attachment type must be registered!");
-        }
-    }
-
-    @Override
-    public final boolean hasAttachments() {
-        return this.attachments != null && !this.attachments.isEmpty();
-    }
-
-    @Override
-    public final boolean hasData(AttachmentType<?> type) {
-        validate(type);
-        return this.attachments != null && this.attachments.containsKey(type);
-    }
+    private final Map<AttachmentType<?>, Object> data = new HashMap<>();
+    private boolean dirty;
 
     @Override
     @SuppressWarnings("unchecked")
-    public final <T> T getData(AttachmentType<T> type) {
-        validate(type);
-        Map<AttachmentType<?>, Object> map = attachmentMap();
-        T ret = (T) map.get(type);
-        if (ret == null) {
-            ret = type.defaultValueSupplier.apply(this.exposedHolder);
-            map.put(type, ret);
-            syncData(type);
-        }
-        return ret;
+    public <T> T getData(AttachmentType<T> type) {
+        if (this.data.containsKey(type))
+            return (T) this.data.get(type);
+        T created = type.createDefault();
+        this.data.put(type, created);
+        return created;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     @Nullable
-    public <T> T getExistingDataOrNull(AttachmentType<T> type) {
-        validate(type);
-        return this.attachments == null ? null : (T) this.attachments.get(type);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> @Nullable T setData(AttachmentType<T> type, T data) {
-        validate(type);
-        Objects.requireNonNull(data);
-        T previous = (T) attachmentMap().put(type, data);
-        syncData(type);
+    public <T> T setData(AttachmentType<T> type, T data) {
+        T previous = (T) this.data.put(type, data);
+        markChanged(type);
         return previous;
     }
 
-    /**
-     * 写入附件但不触发同步，供网络接收端使用。
-     */
-    public void setDataSilently(AttachmentType<?> type, Object data) {
-        attachmentMap().put(type, data);
-    }
-
-    /**
-     * 移除附件但不触发同步，供网络接收端使用。
-     */
-    public void removeDataSilently(AttachmentType<?> type) {
-        if (this.attachments != null) {
-            this.attachments.remove(type);
-        }
-    }
-
     @Override
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T removeData(AttachmentType<T> type) {
-        validate(type);
-        if (this.attachments == null) {
-            return null;
-        }
-        T previous = (T) this.attachments.remove(type);
-        syncData(type);
+    @Nullable
+    public <T> T removeData(AttachmentType<T> type) {
+        T previous = (T) this.data.remove(type);
+        markChanged(type);
         return previous;
     }
 
+    @Override
+    public <T> boolean hasData(AttachmentType<T> type) {
+        return this.data.containsKey(type);
+    }
+
     /**
-     * 把可序列化的附件写入 NBT。没有可序列化附件时返回 null。
+     * 该附件类型是否配置了同步。
+     */
+    public boolean isSynced(AttachmentType<?> type) {
+        return type.syncCodec() != null;
+    }
+
+    /**
+     * 取同步用的副本；未同步的类型返回 null。
      */
     @Nullable
-    public final CompoundTag serializeAttachments(HolderLookup.Provider provider) {
-        if (this.attachments == null) {
+    public NBTTagCompound serializeForSync(AttachmentType<?> type) {
+        if (!this.data.containsKey(type) || type.syncCodec() == null)
             return null;
-        }
-        CompoundTag tag = null;
-        for (Map.Entry<AttachmentType<?>, Object> entry : this.attachments.entrySet()) {
+        return AttachmentRegistry.write(type, this.data.get(type));
+    }
+
+    /**
+     * 写入存档：只持久化注册过且配了序列化器的类型。
+     */
+    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+        NBTTagCompound root = new NBTTagCompound();
+        for (Map.Entry<AttachmentType<?>, Object> entry : this.data.entrySet()) {
             AttachmentType<?> type = entry.getKey();
-            if (type.serializer == null) {
+            ResourceLocation name = type.getRegistryName();
+            if (name == null || type.serializer() == null)
                 continue;
-            }
-            ResourceLocation key = ForgeAttachmentRegistries.ATTACHMENT_TYPES().getKey(type);
-            if (key == null) {
-                continue;
-            }
-            try {
-                @SuppressWarnings("unchecked")
-                Tag serialized = ((IAttachmentSerializer<Tag, Object>) type.serializer).write(entry.getValue(), provider);
-                if (serialized != null) {
-                    if (tag == null) {
-                        tag = new CompoundTag();
-                    }
-                    tag.put(key.toString(), serialized);
-                }
-            } catch (Exception exception) {
-                ForgeAttachment.LOGGER.error("Failed to serialize data attachment {}. Skipping.", key, exception);
-            }
+            NBTTagCompound tag = AttachmentRegistry.write(type, entry.getValue());
+            if (tag != null)
+                root.setTag(name.toString(), tag);
         }
-        return tag;
+        if (!root.isEmpty())
+            compound.setTag(NBT_ROOT, root);
+        return compound;
     }
 
     /**
-     * 把本 holder 上的附件复制到另一个 holder。
-     *
-     * @param isDeath true 时只复制标记了 copyOnDeath 的附件
+     * 读取存档。
      */
-    @SuppressWarnings("unchecked")
-    public final void copyAttachmentsTo(AttachmentHolder to, HolderLookup.Provider provider, boolean isDeath) {
-        if (this.attachments == null) {
+    public void readFromNBT(NBTTagCompound compound) {
+        this.data.clear();
+        if (!compound.hasKey(NBT_ROOT, 10))
             return;
-        }
-        for (Map.Entry<AttachmentType<?>, Object> entry : this.attachments.entrySet()) {
-            AttachmentType<?> type = entry.getKey();
-            if (type.serializer == null) {
+        NBTTagCompound root = compound.getCompoundTag(NBT_ROOT);
+        for (String key : root.getKeySet()) {
+            AttachmentType<?> type = AttachmentRegistry.byNbtKey(key);
+            if (type == null || type.serializer() == null)
                 continue;
-            }
-            if (isDeath && !type.copyOnDeath) {
-                continue;
-            }
-            IAttachmentCopyHandler<Object> copyHandler = (IAttachmentCopyHandler<Object>) type.copyHandler;
-            Object copy = copyHandler.copy(entry.getValue(), to.getExposedHolder(), provider);
-            if (copy != null) {
-                to.attachmentMap().put(type, copy);
-            }
+            this.data.put(type, readAttachment(type, root.getCompoundTag(key)));
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> T readAttachment(AttachmentType<?> type, NBTTagCompound tag) {
+        AttachmentType<T> typed = (AttachmentType<T>) type;
+        return typed.serializer().read(tag);
+    }
+
     /**
-     * 读取此前由 {@link #serializeAttachments(HolderLookup.Provider)} 写出的附件。
-     *
-     * <p>不会触发附件的同步。
+     * 复制 copyOnDeath 的附件到新 holder（玩家重生时用）。
      */
-    public final void deserializeAttachments(HolderLookup.Provider provider, CompoundTag tag) {        for (String key : tag.getAllKeys()) {
-            ResourceLocation keyLocation = ResourceLocation.tryParse(key);
-            if (keyLocation == null) {
-                ForgeAttachment.LOGGER.error("Encountered invalid data attachment key {}. Skipping.", key);
+    public void copyOnDeathTo(AttachmentHolder target) {
+        for (Map.Entry<AttachmentType<?>, Object> entry : this.data.entrySet()) {
+            if (!entry.getKey().copyOnDeath())
                 continue;
-            }
-            AttachmentType<?> type = ForgeAttachmentRegistries.ATTACHMENT_TYPES().getValue(keyLocation);
-            if (type == null || type.serializer == null) {
-                ForgeAttachment.LOGGER.error("Encountered unknown or non-serializable data attachment {}. Skipping.", key);
-                continue;
-            }
-            try {
-                @SuppressWarnings("unchecked")
-                IAttachmentSerializer<Tag, Object> serializer = (IAttachmentSerializer<Tag, Object>) type.serializer;
-                attachmentMap().put(type, serializer.read(this.exposedHolder, tag.get(key), provider));
-            } catch (Exception exception) {
-                ForgeAttachment.LOGGER.error("Failed to deserialize data attachment {}. Skipping.", key, exception);
-            }
+            target.data.put(entry.getKey(), entry.getValue());
         }
+    }
+
+    public boolean isDirty() {
+        return this.dirty;
+    }
+
+    public void clearDirty() {
+        this.dirty = false;
+    }
+
+    private void markChanged(AttachmentType<?> type) {
+        if (type.syncCodec() != null)
+            this.dirty = true;
     }
 }

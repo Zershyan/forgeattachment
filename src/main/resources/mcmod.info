@@ -1,0 +1,17 @@
+[
+  {
+    "modid": "forgeattachment",
+    "name": "ForgeAttachment",
+    "description": "Port of the NeoForge 1.21.1 data attachment system to Forge 1.12.2",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["Zershyan"],
+    "credits": "",
+    "logoFile": "logo.png",
+    "screenshots": [],
+    "parent": "",
+    "dependencies": []
+  }
+]

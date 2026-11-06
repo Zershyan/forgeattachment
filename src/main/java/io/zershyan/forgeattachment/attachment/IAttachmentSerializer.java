@@ -1,29 +1,24 @@
 package io.zershyan.forgeattachment.attachment;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NBTTagCompound;
 
 import javax.annotation.Nullable;
 
 /**
- * 数据附件的序列化器。
+ * 附件的磁盘序列化器。
  *
- * @param <S> 序列化后的 {@link Tag} 子类
- * @param <T> 数据附件的类型
+ * <p>1.12.2 没有 DataFixerUpper 的 {@code Codec}，读写统一用 {@link NBTTagCompound}。
  */
-public interface IAttachmentSerializer<S extends Tag, T> {
-    /**
-     * 从 NBT 读取附件。
-     *
-     * @param holder   附件的 holder，已知子类型时可强转
-     * @param tag      序列化后的附件数据
-     * @param provider 注册表查询上下文
-     */
-    T read(IAttachmentHolder holder, S tag, HolderLookup.Provider provider);
+public interface IAttachmentSerializer<T> {
 
     /**
-     * 把附件写入 NBT，返回 null 表示不应序列化。
+     * 写入 NBT，返回 null 表示该值不持久化。
      */
     @Nullable
-    S write(T attachment, HolderLookup.Provider provider);
+    NBTTagCompound write(T attachment);
+
+    /**
+     * 从 NBT 还原。
+     */
+    T read(NBTTagCompound tag);
 }

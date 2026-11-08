@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "minecraft": "1.12.2",
+      "artifact": "build/libs/forgeattachment-0.0.1-1.12.2.jar",
+      "sha256": "0c9ce79e18f0572a3ad1e504f6f4d176219d4979eb6a6dbb64f6fa9f1e7412a6",
+      "metadata": {
+        "changelog": "First 1.12.2 release: ports the NeoForge 1.21.1 data attachment system to Forge 1.12.2.\n\n- Attachments can be attached to any entity or block entity\n- Persisted through NBT, synced through a SimpleNetworkWrapper packet\n- copyOnDeath support and a registry for attachment types\n\n---\n\n首个 1.12.2 版本：把 NeoForge 1.21.1 的数据附件系统移植到 Forge 1.12.2。\n\n- 任意实体与方块实体均可挂载附件\n- 通过 NBT 持久化，通过 SimpleNetworkWrapper 包同步\n- 支持 copyOnDeath，并提供附件类型注册表",
+        "changelogType": "markdown",
+        "displayName": "forgeattachment-0.0.1-1.12.2",
+        "releaseType": "beta",
+        "gameVersions": [
+          "1.12.2",
+          "Forge",
+          "Java 8",
+          "Client",
+          "Server"
+        ]
+      }
+    }
+  ]
+}
